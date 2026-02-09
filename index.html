@@ -18,13 +18,18 @@
       height: 100%;
       display: block;
     }
+
+    /* UPDATED: centered text container */
     .overlay {
       position: fixed;
-      left: 18px;
-      top: 18px;
-      right: 18px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(1100px, 92vw);
+      text-align: center;
       pointer-events: none;
     }
+
     #typed {
       display: inline-block;
       color: rgba(255,255,255,0.95);
@@ -70,19 +75,19 @@
 
   <script>
     // ====== SETTINGS ======
-    const EMOJIS = ["🏎️", "🔥", "🚀"]; // "F1" vibe: race car + fire + rocket
+    const EMOJIS = ["🏎️", "🔥", "🚀"];
     const MESSAGE = "letssssssss gooooo Munir the formula one future driverrrrrrrrr";
     const TYPE_MS_PER_CHAR = 45;
 
-    const SPAWN_PER_SECOND = 26;      // overall density
-    const GRAVITY_MIN = 90;           // px/s
-    const GRAVITY_MAX = 220;          // px/s
-    const DRIFT_MIN = -22;            // px/s
-    const DRIFT_MAX = 22;             // px/s
-    const SIZE_MIN = 18;              // px
-    const SIZE_MAX = 44;              // px
-    const SPIN_MIN = -0.6;            // rad/s
-    const SPIN_MAX = 0.6;             // rad/s
+    const SPAWN_PER_SECOND = 26;
+    const GRAVITY_MIN = 90;
+    const GRAVITY_MAX = 220;
+    const DRIFT_MIN = -22;
+    const DRIFT_MAX = 22;
+    const SIZE_MIN = 18;
+    const SIZE_MAX = 44;
+    const SPIN_MIN = -0.6;
+    const SPIN_MAX = 0.6;
 
     const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const spawnRate = prefersReducedMotion ? Math.max(6, Math.floor(SPAWN_PER_SECOND / 3)) : SPAWN_PER_SECOND;
@@ -95,8 +100,7 @@
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
       canvas.width = Math.floor(innerWidth * dpr);
       canvas.height = Math.floor(innerHeight * dpr);
-      canvas.dataset.dpr = String(dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     addEventListener("resize", resize, { passive: true });
     resize();
@@ -138,17 +142,15 @@
     let spawnAccumulator = 0;
 
     function frame(now) {
-      const dt = Math.min(0.033, (now - last) / 1000); // cap to avoid huge jumps
+      const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
 
-      // spawn
       spawnAccumulator += spawnRate * dt;
       while (spawnAccumulator >= 1) {
         spawnOne();
         spawnAccumulator -= 1;
       }
 
-      // clear
       ctx.clearRect(0, 0, innerWidth, innerHeight);
 
       // subtle glow layer
@@ -158,14 +160,12 @@
       ctx.fillRect(0, 0, innerWidth, innerHeight);
       ctx.restore();
 
-      // draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.vr * dt;
 
-        // wrap a bit horizontally
         if (p.x < -80) p.x = innerWidth + 80;
         if (p.x > innerWidth + 80) p.x = -80;
 
@@ -181,7 +181,6 @@
         ctx.fillText(p.emoji, 0, 0);
         ctx.restore();
 
-        // remove if offscreen
         if (p.y > innerHeight + 120) particles.splice(i, 1);
       }
 
@@ -191,13 +190,4 @@
     requestAnimationFrame(frame);
   </script>
 </body>
-</html>.overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%); /* shift back by half its own size */
-  width: min(1100px, 92vw);
-  text-align: center;
-  pointer-events: none;
-}
-
+</html>
