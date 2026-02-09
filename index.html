@@ -191,4 +191,13 @@
     requestAnimationFrame(frame);
   </script>
 </body>
-</html>
+</html>.overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* shift back by half its own size */
+  width: min(1100px, 92vw);
+  text-align: center;
+  pointer-events: none;
+}
+
