@@ -36,4 +36,159 @@
       line-height: 1.15;
     }
     #caret {
-      dis
+      display: inline-block;
+      width: 0.65ch;
+      margin-left: 2px;
+      color: rgba(255,255,255,0.95);
+      animation: blink 0.9s steps(1) infinite;
+      transform: translateY(-2px);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .hint {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      color: rgba(255,255,255,0.65);
+      font-size: 12px;
+      user-select: none;
+      pointer-events: none;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="overlay">
+    <div>
+      <span id="typed"></span><span id="caret">|</span>
+    </div>
+  </div>
+
+  <div class="hint">Tip: refresh to replay • edit emojis/message inside the script</div>
+
+  <script>
+    // ====== SETTINGS ======
+    const EMOJIS = ["🏎️", "🔥", "🚀"]; // "F1" vibe: race car + fire + rocket
+    const MESSAGE = "letssssssss gooooo Munir the formula one future driverrrrrrrrr";
+    const TYPE_MS_PER_CHAR = 45;
+
+    const SPAWN_PER_SECOND = 26;      // overall density
+    const GRAVITY_MIN = 90;           // px/s
+    const GRAVITY_MAX = 220;          // px/s
+    const DRIFT_MIN = -22;            // px/s
+    const DRIFT_MAX = 22;             // px/s
+    const SIZE_MIN = 18;              // px
+    const SIZE_MAX = 44;              // px
+    const SPIN_MIN = -0.6;            // rad/s
+    const SPIN_MAX = 0.6;             // rad/s
+
+    const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const spawnRate = prefersReducedMotion ? Math.max(6, Math.floor(SPAWN_PER_SECOND / 3)) : SPAWN_PER_SECOND;
+
+    // ====== CANVAS SETUP ======
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d", { alpha: true });
+
+    function resize() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = Math.floor(innerWidth * dpr);
+      canvas.height = Math.floor(innerHeight * dpr);
+      canvas.dataset.dpr = String(dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+    }
+    addEventListener("resize", resize, { passive: true });
+    resize();
+
+    // ====== PARTICLES ======
+    const particles = [];
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+    function spawnOne() {
+      const size = rand(SIZE_MIN, SIZE_MAX);
+      particles.push({
+        emoji: pick(EMOJIS),
+        x: rand(-20, innerWidth + 20),
+        y: rand(-80, -20),
+        vy: rand(GRAVITY_MIN, GRAVITY_MAX),
+        vx: rand(DRIFT_MIN, DRIFT_MAX),
+        size,
+        rot: rand(-Math.PI, Math.PI),
+        vr: rand(SPIN_MIN, SPIN_MAX),
+        opacity: rand(0.75, 1),
+      });
+    }
+
+    // ====== TYPEWRITER ======
+    const typedEl = document.getElementById("typed");
+    let typeIndex = 0;
+    function typeTick() {
+      if (typeIndex <= MESSAGE.length) {
+        typedEl.textContent = MESSAGE.slice(0, typeIndex);
+        typeIndex++;
+        setTimeout(typeTick, TYPE_MS_PER_CHAR);
+      }
+    }
+    typeTick();
+
+    // ====== ANIMATION LOOP ======
+    let last = performance.now();
+    let spawnAccumulator = 0;
+
+    function frame(now) {
+      const dt = Math.min(0.033, (now - last) / 1000); // cap to avoid huge jumps
+      last = now;
+
+      // spawn
+      spawnAccumulator += spawnRate * dt;
+      while (spawnAccumulator >= 1) {
+        spawnOne();
+        spawnAccumulator -= 1;
+      }
+
+      // clear
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+      // subtle glow layer
+      ctx.save();
+      ctx.globalAlpha = 0.10;
+      ctx.fillStyle = "#6cf";
+      ctx.fillRect(0, 0, innerWidth, innerHeight);
+      ctx.restore();
+
+      // draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+
+        // wrap a bit horizontally
+        if (p.x < -80) p.x = innerWidth + 80;
+        if (p.x > innerWidth + 80) p.x = -80;
+
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.font = `${p.size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.35)";
+        ctx.shadowBlur = 10;
+        ctx.fillText(p.emoji, 0, 0);
+        ctx.restore();
+
+        // remove if offscreen
+        if (p.y > innerHeight + 120) particles.splice(i, 1);
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
